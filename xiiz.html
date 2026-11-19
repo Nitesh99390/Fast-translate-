@@ -1,0 +1,2246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- =====================================================================
+       META TAGS, SEO & PERFORMANCE PRECONNECTS
+       ===================================================================== -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0F1030">
+  <title>EPUB Translator — Translate Full Books in Minutes</title>
+  <meta name="description" content="Send an EPUB, PDF, DOCX, TXT, or HTML file to our Telegram bot and get it back translated in 4–6 minutes, with full formatting intact.">
+
+  <!-- Preconnect to font and image CDNs for faster First Contentful Paint -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400..800&family=Literata:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    /* =======================================================================
+       1. DESIGN TOKENS & ROOT VARIABLES
+       Centralized palette, typography, elevation, and spring physics curves.
+       ======================================================================= */
+    :root {
+      /* Surface & Brand Colors */
+      --paper: #F1F3EC;
+      --paper-soft: #E8EBE0;
+      --ink: #17173A;
+      --ink2: #4B4E70;
+      --line: rgba(23, 23, 58, 0.11);
+      --gold: #F5B335;
+      --gold-hover: #FFBE42;
+      --indigo: #4B49E8;
+      --indigo-soft: #8B89F5;
+      --teal: #0F8F86;
+      --night: #0F1030;
+      --night-deep: #090A1F;
+      --card: #FFFFFF;
+
+      /* Typography */
+      --display: "Bricolage Grotesque", system-ui, -apple-system, sans-serif;
+      --text: "Literata", Georgia, serif;
+
+      /* Motion Curves (Apple / Linear-inspired spring easing) */
+      --spring: cubic-bezier(0.16, 1, 0.3, 1);
+      --bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+      /* Layout Constants */
+      --radius-lg: 26px;
+      --radius-md: 18px;
+      --header-h: 74px;
+    }
+
+    /* =======================================================================
+       2. GLOBAL RESET & ACCESSIBILITY BASE
+       ======================================================================= */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: calc(var(--header-h) + 20px);
+    }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font: 400 17.5px/1.72 var(--text);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      overflow-x: hidden;
+    }
+
+    ::selection {
+      background: rgba(245, 179, 53, 0.35);
+      color: var(--ink);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+      color: inherit;
+      background: none;
+      border: 0;
+      cursor: pointer;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--gold);
+      outline-offset: 3px;
+      border-radius: 6px;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    /* Typography Scale */
+    h1, h2, h3, h4 {
+      font-family: var(--display);
+      letter-spacing: -0.03em;
+      line-height: 1.06;
+    }
+
+    h1 {
+      font-weight: 800;
+      font-size: clamp(2.6rem, 5.8vw, 5rem);
+      letter-spacing: -0.045em;
+      line-height: 0.96;
+      margin-bottom: 22px;
+    }
+
+    h2 {
+      font-weight: 700;
+      font-size: clamp(2rem, 4.2vw, 3.35rem);
+      margin-bottom: 14px;
+    }
+
+    h3 {
+      font-weight: 700;
+      font-size: 1.32rem;
+      margin-bottom: 10px;
+      letter-spacing: -0.015em;
+    }
+
+    /* Centered Page Container */
+    .w {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Eyebrow Pill Label for Sections */
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      margin-bottom: 16px;
+      border-radius: 999px;
+      background: rgba(75, 73, 232, 0.09);
+      color: var(--indigo);
+      font: 700 0.78rem/1 var(--display);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow.dark {
+      background: rgba(245, 179, 53, 0.14);
+      color: var(--gold);
+      border: 1px solid rgba(245, 179, 53, 0.28);
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 0 0 currentColor;
+      animation: livePulse 2s infinite;
+    }
+
+    @keyframes livePulse {
+      0% { box-shadow: 0 0 0 0 rgba(245, 179, 53, 0.7); }
+      70% { box-shadow: 0 0 0 8px rgba(245, 179, 53, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(245, 179, 53, 0); }
+    }
+
+    /* =======================================================================
+       3. TOP SCROLL PROGRESS BAR (GPU-Accelerated)
+       ======================================================================= */
+    .scroll-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold), var(--indigo-soft), var(--teal));
+      transform-origin: 0 50%;
+      transform: scaleX(0);
+      z-index: 300;
+      pointer-events: none;
+    }
+
+    /* =======================================================================
+       4. BUTTON SYSTEM (Shimmer + Tactile Spring Press)
+       ======================================================================= */
+    .btn {
+      position: relative;
+      overflow: hidden;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 52px;
+      padding: 0 28px;
+      border-radius: 999px;
+      font: 600 0.98rem var(--display);
+      white-space: nowrap;
+      transition: transform 0.35s var(--spring), box-shadow 0.35s var(--spring), background 0.25s ease;
+      transform: translate3d(0, 0, 0);
+    }
+
+    .btn:hover {
+      transform: translate3d(0, -3px, 0);
+      box-shadow: 0 14px 28px -10px rgba(15, 16, 48, 0.38);
+    }
+
+    .btn:active {
+      transform: scale3d(0.96, 0.96, 1);
+    }
+
+    .btn.sm {
+      min-height: 42px;
+      padding: 0 20px;
+      font-size: 0.9rem;
+    }
+
+    /* Primary Gold CTA with Periodic Shimmer */
+    .btn.gold {
+      background: var(--gold);
+      color: var(--ink);
+    }
+
+    .btn.gold::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -130%;
+      width: 65%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+      transform: skewX(-22deg);
+      animation: btnShimmer 4.5s infinite;
+      pointer-events: none;
+    }
+
+    @keyframes btnShimmer {
+      0%, 72% { transform: translate3d(0, 0, 0) skewX(-22deg); }
+      100% { transform: translate3d(440%, 0, 0) skewX(-22deg); }
+    }
+
+    .btn.gold:hover {
+      background: var(--gold-hover);
+    }
+
+    /* Translucent Glass Ghost Button */
+    .btn.ghost {
+      color: #F3F1E8;
+      background: rgba(255, 255, 255, 0.06);
+      box-shadow: inset 0 0 0 1.5px rgba(243, 241, 232, 0.32);
+      backdrop-filter: blur(8px);
+    }
+
+    .btn.ghost:hover {
+      background: rgba(255, 255, 255, 0.14);
+      box-shadow: inset 0 0 0 1.5px rgba(243, 241, 232, 0.6);
+    }
+
+    /* Dark Solid Ink Button */
+    .btn.ink {
+      background: var(--ink);
+      color: #FFFFFF;
+    }
+
+    .btn.ink:hover {
+      background: #27275E;
+    }
+
+    /* =======================================================================
+       5. STICKY GLASSMORPHIC HEADER & MOBILE DRAWER
+       ======================================================================= */
+    .top {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 200;
+      color: #F3F1E8;
+      background: rgba(15, 16, 48, 0.45);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      transition: background 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+    }
+
+    /* Intensify glass background once user scrolls past hero */
+    .top.scrolled {
+      background: rgba(15, 16, 48, 0.92);
+      border-bottom-color: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.45);
+    }
+
+    .tb {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      height: var(--header-h);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font: 700 1.15rem var(--display);
+      letter-spacing: -0.02em;
+      margin-right: auto;
+    }
+
+    .mk {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: conic-gradient(from 135deg, var(--gold) 0 50%, var(--indigo-soft) 50% 100%);
+      box-shadow: 0 0 16px rgba(245, 179, 53, 0.35);
+      animation: spinPulse 10s linear infinite;
+    }
+
+    @keyframes spinPulse {
+      0% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(180deg) scale(1.06); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav a {
+      position: relative;
+      padding: 8px 14px;
+      border-radius: 999px;
+      color: #C3C7E8;
+      font: 500 0.94rem var(--display);
+      transition: color 0.25s ease, background 0.25s ease;
+    }
+
+    .nav a:hover,
+    .nav a.active {
+      color: #FFFFFF;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .nav a.active {
+      color: var(--gold);
+    }
+
+    /* Hamburger Toggle Button (Mobile Only) */
+    .menu-toggle {
+      display: none;
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      place-items: center;
+      transition: background 0.2s ease;
+    }
+
+    .menu-toggle:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .hamburger {
+      width: 18px;
+      height: 12px;
+      position: relative;
+    }
+
+    .hamburger span {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      border-radius: 2px;
+      background: #F3F1E8;
+      transition: transform 0.3s var(--spring), opacity 0.2s ease;
+    }
+
+    .hamburger span:nth-child(1) { top: 0; }
+    .hamburger span:nth-child(2) { top: 5px; }
+    .hamburger span:nth-child(3) { top: 10px; }
+
+    .menu-toggle[aria-expanded="true"] .hamburger span:nth-child(1) {
+      transform: translateY(5px) rotate(45deg);
+    }
+    .menu-toggle[aria-expanded="true"] .hamburger span:nth-child(2) {
+      opacity: 0;
+    }
+    .menu-toggle[aria-expanded="true"] .hamburger span:nth-child(3) {
+      transform: translateY(-5px) rotate(-45deg);
+    }
+
+    /* Slide-down Mobile Navigation Drawer */
+    .mobile-drawer {
+      position: fixed;
+      top: var(--header-h);
+      left: 0;
+      right: 0;
+      background: rgba(12, 13, 40, 0.97);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 20px 24px 28px;
+      display: grid;
+      gap: 10px;
+      transform: translate3d(0, -16px, 0);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.35s var(--spring), opacity 0.25s ease;
+      z-index: 190;
+    }
+
+    .mobile-drawer.open {
+      transform: translate3d(0, 0, 0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .mobile-drawer a {
+      padding: 13px 16px;
+      border-radius: 14px;
+      font: 600 1.05rem var(--display);
+      color: #E3E6FA;
+      background: rgba(255, 255, 255, 0.04);
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .mobile-drawer a:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--gold);
+    }
+
+    /* =======================================================================
+       6. HERO SECTION + LIVE TELEGRAM BOT PREVIEW MOCKUP
+       ======================================================================= */
+    .hero {
+      position: relative;
+      min-height: 94vh;
+      display: flex;
+      align-items: center;
+      padding: calc(var(--header-h) + 64px) 0 88px;
+      color: #F3F1E8;
+      overflow: hidden;
+      background: var(--night);
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 80% 20%, rgba(139, 137, 245, 0.24), transparent 46%),
+        radial-gradient(circle at 18% 75%, rgba(245, 179, 53, 0.16), transparent 42%),
+        linear-gradient(180deg, rgba(15, 16, 48, 0.42), rgba(15, 16, 48, 0.78) 58%, rgba(15, 16, 48, 0.99)),
+        url("https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&q=75&auto=format&fit=crop") center/cover no-repeat;
+      transform: scale3d(1.07, 1.07, 1);
+      animation: heroBgZoom 12s var(--spring) forwards;
+      pointer-events: none;
+    }
+
+    @keyframes heroBgZoom {
+      to { transform: scale3d(1, 1, 1); }
+    }
+
+    .hero-grid {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+      gap: 48px;
+      align-items: center;
+    }
+
+    .lead {
+      font-size: clamp(1.05rem, 1.8vw, 1.22rem);
+      color: #D6DAF2;
+      max-width: 34em;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 32px;
+    }
+
+    .note {
+      margin-top: 18px;
+      font: 500 0.9rem var(--display);
+      color: #A9AED6;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Live Interactive Telegram Bot Mockup Card */
+    .bot-preview {
+      background: rgba(20, 22, 62, 0.74);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 28px;
+      padding: 20px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 32px 70px -20px rgba(0, 0, 0, 0.65);
+      font-family: var(--display);
+      animation: floatCard 6s ease-in-out infinite;
+    }
+
+    @keyframes floatCard {
+      0%, 100% { transform: translate3d(0, 0, 0); }
+      50% { transform: translate3d(0, -10px, 0); }
+    }
+
+    .bot-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 14px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .bot-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--indigo-soft));
+      display: grid;
+      place-items: center;
+      color: var(--ink);
+      font-weight: 800;
+      font-size: 1rem;
+    }
+
+    .bot-title {
+      font-weight: 700;
+      font-size: 0.98rem;
+      line-height: 1.2;
+    }
+
+    .bot-status {
+      font-size: 0.78rem;
+      color: #6BE4B5;
+    }
+
+    .chat-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .msg {
+      padding: 12px 15px;
+      border-radius: 16px;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      max-width: 92%;
+    }
+
+    .msg.user {
+      justify-self: end;
+      background: rgba(75, 73, 232, 0.38);
+      border: 1px solid rgba(139, 137, 245, 0.35);
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg.bot {
+      justify-self: start;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom-left-radius: 4px;
+      width: 100%;
+    }
+
+    .file-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .file-badge {
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: var(--gold);
+      color: var(--ink);
+      font-weight: 800;
+      font-size: 0.72rem;
+    }
+
+    .file-meta {
+      font-size: 0.75rem;
+      color: #B8BCEA;
+    }
+
+    .prog-track {
+      height: 7px;
+      width: 100%;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      margin: 10px 0 6px;
+      overflow: hidden;
+    }
+
+    .prog-fill {
+      height: 100%;
+      width: 86%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--gold), #6BE4B5);
+      animation: progAnim 4s ease-in-out infinite alternate;
+    }
+
+    @keyframes progAnim {
+      0% { width: 32%; }
+      100% { width: 100%; }
+    }
+
+    .prog-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: #C7CBEF;
+    }
+
+    /* Hero Entrance Animations */
+    @keyframes heroRise {
+      from {
+        opacity: 0;
+        transform: translate3d(0, 30px, 0) scale3d(0.98, 0.98, 1);
+      }
+      to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
+      }
+    }
+
+    .rise-1 { animation: heroRise 0.85s 0.05s var(--spring) both; }
+    .rise-2 { animation: heroRise 0.85s 0.16s var(--spring) both; }
+    .rise-3 { animation: heroRise 0.85s 0.28s var(--spring) both; }
+    .rise-4 { animation: heroRise 0.85s 0.38s var(--spring) both; }
+    .rise-5 { animation: heroRise 1s 0.32s var(--spring) both; }
+
+    /* =======================================================================
+       7. KEY METRICS TRUST BAR
+       ======================================================================= */
+    .stats-strip {
+      position: relative;
+      z-index: 4;
+      margin-top: -42px;
+    }
+
+    .stats-grid {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 26px 28px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      box-shadow: 0 22px 46px -22px rgba(15, 16, 48, 0.2);
+    }
+
+    .stat-item {
+      padding-left: 18px;
+      border-left: 2px solid var(--line);
+    }
+
+    .stat-item:first-child {
+      padding-left: 0;
+      border-left: 0;
+    }
+
+    .stat-val {
+      font: 800 clamp(1.5rem, 2.4vw, 2.05rem)/1.1 var(--display);
+      color: var(--ink);
+      letter-spacing: -0.03em;
+    }
+
+    .stat-lbl {
+      margin-top: 4px;
+      font: 500 0.88rem var(--display);
+      color: var(--ink2);
+    }
+
+    /* =======================================================================
+       8. SCROLL-REVEAL ENGINE & SECTION LAYOUT
+       ======================================================================= */
+    .reveal {
+      opacity: 0;
+      transform: translate3d(0, 38px, 0) scale3d(0.97, 0.97, 1);
+      transition: opacity 0.78s var(--spring), transform 0.78s var(--spring);
+      transition-delay: calc(var(--delay, 0) * 85ms);
+    }
+
+    .reveal.in-view {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
+    }
+
+    .block {
+      padding: 96px 0 0;
+    }
+
+    .section-head {
+      margin-bottom: 42px;
+    }
+
+    .sub {
+      color: var(--ink2);
+      max-width: 38em;
+      font-size: 1.06rem;
+    }
+
+    .deck {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(295px, 1fr));
+      gap: 24px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+      gap: 22px;
+    }
+
+    /* =======================================================================
+       9. INTERACTIVE SPOTLIGHT CARDS
+       Tracks pointer coordinates (--mx, --my) on desktop for tactile glow.
+       ======================================================================= */
+    .card {
+      position: relative;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: clamp(26px, 3.8vw, 38px);
+      box-shadow: 0 12px 32px -18px rgba(15, 16, 48, 0.08);
+      transition: transform 0.4s var(--spring), box-shadow 0.4s var(--spring), border-color 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Accent Gradient Sweep */
+    .card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold), var(--indigo-soft));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.45s var(--spring);
+      z-index: 2;
+    }
+
+    /* Pointer-Following Radial Spotlight (Desktop Hover Only) */
+    @media (hover: hover) {
+      .card.spotlight::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          320px circle at var(--mx, 50%) var(--my, 50%),
+          rgba(245, 179, 53, 0.13),
+          transparent 65%
+        );
+        opacity: 0;
+        transition: opacity 0.35s ease;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .card.spotlight:hover::after {
+        opacity: 1;
+      }
+    }
+
+    .card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .card:hover {
+      transform: translate3d(0, -6px, 0);
+      box-shadow: 0 24px 48px -18px rgba(15, 16, 48, 0.15);
+      border-color: rgba(23, 23, 58, 0.24);
+    }
+
+    .card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .card p {
+      color: var(--ink2);
+      line-height: 1.65;
+      font-size: 0.98rem;
+    }
+
+    .feat-dot {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: rgba(245, 179, 53, 0.18);
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      font-size: 1.3rem;
+      margin-bottom: 18px;
+      transition: transform 0.4s var(--bounce), background 0.3s ease;
+    }
+
+    .card:hover .feat-dot {
+      transform: scale3d(1.12, 1.12, 1) rotate(-7deg);
+      background: var(--gold);
+    }
+
+    /* =======================================================================
+       10. EDITORIAL CALM IMAGE BANNER
+       ======================================================================= */
+    .card-calm {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      min-height: 460px;
+      padding: 0;
+      overflow: hidden;
+      background: var(--night);
+      color: #F3F1E8;
+      border: 0;
+      border-radius: 28px;
+      box-shadow: 0 26px 56px -22px rgba(15, 16, 48, 0.42);
+    }
+
+    .card-calm::before {
+      display: none;
+    }
+
+    .card-calm img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale3d(1.09, 1.09, 1);
+      transition: transform 1.4s var(--spring);
+    }
+
+    .card-calm.in-view img {
+      transform: scale3d(1, 1, 1);
+    }
+
+    .card-calm:hover img {
+      transform: scale3d(1.04, 1.04, 1);
+    }
+
+    .card-calm::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(0deg, rgba(15, 16, 48, 0.94) 12%, rgba(15, 16, 48, 0.25) 72%);
+      z-index: 1;
+    }
+
+    .card-calm .in {
+      position: relative;
+      z-index: 2;
+      padding: clamp(28px, 6vw, 60px);
+      max-width: 680px;
+    }
+
+    .card-calm p {
+      color: #D6DAF2;
+      font-size: 1.08rem;
+      max-width: 34em;
+    }
+
+    /* =======================================================================
+       11. INTERACTIVE FORMAT BOOKSHELF
+       Click or tap any book spine to inspect supported format capabilities.
+       ======================================================================= */
+    .shelf-card {
+      text-align: center;
+      align-items: center;
+    }
+
+    .shelf {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 14px;
+      width: 100%;
+      max-width: 780px;
+      overflow-x: auto;
+      border-bottom: 10px solid var(--ink);
+      padding: 36px 20px 0;
+      margin: 0 auto;
+    }
+
+    .sp {
+      flex: none;
+      width: 82px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      writing-mode: vertical-rl;
+      font: 700 1.12rem/1 var(--display);
+      letter-spacing: 0.06em;
+      padding: 20px 0;
+      border-radius: 8px 8px 0 0;
+      color: #F5F6FB;
+      box-shadow:
+        inset -10px 0 14px -10px rgba(0, 0, 0, 0.35),
+        inset 10px 0 14px -10px rgba(255, 255, 255, 0.22),
+        0 6px 16px rgba(0, 0, 0, 0.14);
+      opacity: 0;
+      transform: translate3d(0, -52px, 0) rotate(-6deg);
+      transition: transform 0.5s var(--bounce), opacity 0.4s ease, box-shadow 0.3s ease;
+      transition-delay: calc(var(--b, 0) * 85ms);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .shelf-card.in-view .sp {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) rotate(0deg);
+    }
+
+    .shelf-card.in-view .sp:hover,
+    .shelf-card.in-view .sp.selected {
+      transform: translate3d(0, -20px, 0) rotate(-2.5deg) scale3d(1.05, 1.05, 1);
+      box-shadow: 0 18px 28px -10px rgba(15, 16, 48, 0.35);
+      transition-delay: 0ms;
+    }
+
+    /* Dynamic Format Info Box Below Shelf */
+    .shelf-info {
+      margin-top: 26px;
+      padding: 14px 22px;
+      border-radius: 16px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      font: 500 0.96rem var(--display);
+      color: var(--ink);
+      max-width: 620px;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .shelf-info strong {
+      color: var(--indigo);
+    }
+
+    /* =======================================================================
+       12. FOUR-STEP PROCESS CARDS
+       ======================================================================= */
+    .n {
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--paper);
+      box-shadow: 0 0 0 2px var(--ink);
+      font: 800 1.1rem var(--display);
+      margin-bottom: 20px;
+      transition: transform 0.4s var(--bounce), background 0.3s ease;
+    }
+
+    .card:hover .n {
+      background: var(--gold);
+      transform: scale3d(1.12, 1.12, 1);
+    }
+
+    /* =======================================================================
+       13. PRICING SECTION WITH INTERACTIVE BILLING SWITCHER
+       Includes updated 200 files / month Fair Usage Policy across plans.
+       ======================================================================= */
+    .pricing-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 38px;
+    }
+
+    /* Segmented Billing Pill Switcher */
+    .billing-switch {
+      display: inline-flex;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px;
+      gap: 4px;
+      box-shadow: 0 8px 20px -12px rgba(15, 16, 48, 0.16);
+    }
+
+    .bill-btn {
+      padding: 10px 18px;
+      border-radius: 999px;
+      font: 600 0.88rem var(--display);
+      color: var(--ink2);
+      transition: background 0.3s var(--spring), color 0.25s ease, transform 0.2s ease;
+    }
+
+    .bill-btn.active {
+      background: var(--ink);
+      color: #FFFFFF;
+    }
+
+    .bill-btn .save-tag {
+      margin-left: 5px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: var(--gold);
+      color: var(--ink);
+      font-size: 0.7rem;
+      font-weight: 800;
+    }
+
+    .plan {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .tier-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .tier {
+      font: 700 1.18rem var(--display);
+    }
+
+    .badge {
+      background: var(--gold);
+      color: var(--ink);
+      font: 800 0.74rem var(--display);
+      padding: 5px 12px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      animation: badgePulse 2.8s ease-in-out infinite;
+    }
+
+    @keyframes badgePulse {
+      0%, 100% { transform: scale3d(1, 1, 1); }
+      50% { transform: scale3d(1.06, 1.06, 1); }
+    }
+
+    .price {
+      font: 800 3.1rem/1 var(--display);
+      letter-spacing: -0.04em;
+      transition: opacity 0.2s ease, transform 0.25s var(--spring);
+    }
+
+    .price.updating {
+      opacity: 0.2;
+      transform: translateY(-6px);
+    }
+
+    .per {
+      margin: 10px 0 22px;
+      font: 500 0.94rem var(--display);
+    }
+
+    .plan ul {
+      list-style: none;
+      display: grid;
+      gap: 11px;
+      margin-bottom: 28px;
+      flex: 1;
+    }
+
+    .plan li {
+      position: relative;
+      padding-left: 26px;
+      font-size: 0.96rem;
+      line-height: 1.5;
+    }
+
+    .plan li::before {
+      content: "";
+      position: absolute;
+      left: 3px;
+      top: 0.52em;
+      width: 10px;
+      height: 5px;
+      border-left: 2.2px solid var(--teal);
+      border-bottom: 2.2px solid var(--teal);
+      transform: rotate(-45deg);
+    }
+
+    /* Highlighted Popular Plan Card */
+    .hot {
+      background: linear-gradient(160deg, #17173A 0%, #10112E 100%);
+      color: #F5F6FB;
+      border-color: rgba(245, 179, 53, 0.5);
+      box-shadow: 0 26px 52px -16px rgba(23, 23, 58, 0.52);
+    }
+
+    .hot::before {
+      transform: scaleX(1);
+    }
+
+    .hot p {
+      color: #B8BCEA;
+    }
+
+    .hot li::before {
+      border-color: var(--gold);
+    }
+
+    .plan .btn {
+      width: 100%;
+    }
+
+    .extra-plans {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      gap: 24px;
+    }
+
+    .pay {
+      max-width: 48em;
+      margin: 28px auto 0;
+      padding: 0 24px;
+      color: var(--ink2);
+      text-align: center;
+      font-size: 0.95rem;
+    }
+
+    /* =======================================================================
+       14. WORD-BY-WORD SCROLL HIGHLIGHT STATEMENT & LANGUAGE MARQUEE
+       ======================================================================= */
+    .stmt {
+      padding: 120px 0 100px;
+    }
+
+    .fill-words {
+      font: 700 clamp(2.35rem, 5.4vw, 4.8rem)/1.08 var(--display);
+      letter-spacing: -0.035em;
+      max-width: 16em;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.24em;
+    }
+
+    .fill-word {
+      color: var(--ink);
+      opacity: 0.16;
+      transform: translate3d(0, 8px, 0);
+      transition: opacity 0.28s ease, transform 0.28s var(--spring), color 0.28s ease;
+    }
+
+    .fill-word.lit {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+
+    .fill-word.accent.lit {
+      color: var(--indigo);
+    }
+
+    /* Infinite Dual-Track Language Marquee with Soft Edge Fade */
+    .lang-row {
+      position: relative;
+      overflow: hidden;
+      padding: 26px 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.5);
+      mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+      -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+    }
+
+    .lang-track {
+      display: flex;
+      width: max-content;
+      white-space: nowrap;
+      font: 700 clamp(2.4rem, 6.4vw, 5.6rem)/1 var(--display);
+      letter-spacing: -0.04em;
+      transform: translate3d(0, 0, 0);
+      animation: marquee3d 28s linear infinite;
+    }
+
+    .lang-row:hover .lang-track {
+      animation-play-state: paused;
+    }
+
+    .lang-track span {
+      margin-right: 0.55em;
+      transition: color 0.25s ease, transform 0.25s var(--spring);
+      display: inline-block;
+    }
+
+    .lang-track span:hover {
+      color: var(--indigo);
+      transform: scale3d(1.06, 1.06, 1);
+    }
+
+    @keyframes marquee3d {
+      0% { transform: translate3d(0, 0, 0); }
+      100% { transform: translate3d(-50%, 0, 0); }
+    }
+
+    /* =======================================================================
+       15. SMOOTH FAQ ACCORDION
+       ======================================================================= */
+    .faq {
+      max-width: 840px;
+      margin: 0 auto;
+    }
+
+    .faq details {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .faq details[open] {
+      border-color: rgba(75, 73, 232, 0.35);
+      box-shadow: 0 14px 32px -18px rgba(15, 16, 48, 0.16);
+    }
+
+    .faq summary {
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      padding: 22px 26px;
+      cursor: pointer;
+      font: 600 1.12rem/1.35 var(--display);
+      transition: color 0.2s ease;
+    }
+
+    .faq summary:hover {
+      color: var(--indigo);
+    }
+
+    .faq summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .faq summary::after {
+      content: "+";
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--paper);
+      display: grid;
+      place-items: center;
+      font: 400 1.5rem/1 var(--display);
+      color: var(--indigo);
+      flex: none;
+      transition: transform 0.35s var(--spring), background 0.25s ease, color 0.25s ease;
+    }
+
+    .faq details[open] summary::after {
+      transform: rotate(45deg);
+      background: var(--indigo);
+      color: #FFFFFF;
+    }
+
+    .faq .faq-body {
+      padding: 0 26px 22px;
+      color: var(--ink2);
+      line-height: 1.7;
+      font-size: 0.98rem;
+    }
+
+    /* =======================================================================
+       16. FINAL CALL-TO-ACTION & FOOTER
+       ======================================================================= */
+    .cta {
+      position: relative;
+      overflow: hidden;
+      padding: 112px 0;
+      color: #F3F1E8;
+      background:
+        linear-gradient(180deg, rgba(15, 16, 48, 0.62), rgba(15, 16, 48, 0.96)),
+        url("https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=1400&q=75&auto=format&fit=crop") center/cover no-repeat;
+    }
+
+    .cta p {
+      color: #D6DAF2;
+      max-width: 34em;
+      margin: 16px 0 34px;
+      font-size: 1.12rem;
+    }
+
+    footer {
+      background: var(--night-deep);
+      color: #C7CBEA;
+      padding: 72px 0 40px;
+    }
+
+    .fg {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 40px;
+    }
+
+    footer h4 {
+      font: 600 1rem var(--display);
+      color: #F3F1E8;
+      margin-bottom: 14px;
+    }
+
+    footer ul {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+
+    footer a {
+      color: #B3B7DD;
+      transition: color 0.2s ease, transform 0.2s ease;
+      display: inline-block;
+    }
+
+    footer a:hover {
+      color: var(--gold);
+      transform: translate3d(4px, 0, 0);
+    }
+
+    .fb {
+      font: 700 1.2rem var(--display);
+      color: #F3F1E8;
+      margin-bottom: 10px;
+    }
+
+    .legal {
+      margin-top: 52px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(243, 241, 232, 0.12);
+      font-size: 0.9rem;
+      color: #9EA3CF;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    /* =======================================================================
+       17. FLOATING BACK-TO-TOP BUTTON
+       ======================================================================= */
+    .to-top {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: var(--gold);
+      border: 1px solid rgba(245, 179, 53, 0.35);
+      box-shadow: 0 12px 26px -8px rgba(15, 16, 48, 0.5);
+      display: grid;
+      place-items: center;
+      font: 700 1.2rem var(--display);
+      opacity: 0;
+      transform: translate3d(0, 16px, 0) scale(0.9);
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.35s var(--spring), background 0.2s ease;
+      z-index: 150;
+    }
+
+    .to-top.show {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+      pointer-events: auto;
+    }
+
+    .to-top:hover {
+      background: var(--gold);
+      color: var(--ink);
+      transform: translate3d(0, -4px, 0);
+    }
+
+    /* =======================================================================
+       18. RESPONSIVE BREAKPOINTS & REDUCED MOTION ACCESSIBILITY
+       ======================================================================= */
+    @media (max-width: 960px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+        gap: 36px;
+      }
+      .bot-preview {
+        max-width: 460px;
+      }
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .stat-item:nth-child(3) {
+        padding-left: 0;
+        border-left: 0;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .nav, .header-cta {
+        display: none;
+      }
+      .menu-toggle {
+        display: grid;
+      }
+      .hero {
+        min-height: auto;
+        padding: calc(var(--header-h) + 42px) 0 76px;
+      }
+      .stats-strip {
+        margin-top: -26px;
+      }
+      .card-calm {
+        min-height: 360px;
+      }
+      .block {
+        padding-top: 72px;
+      }
+      .sp {
+        width: 62px;
+        font-size: 0.98rem;
+      }
+      .billing-switch {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .bill-btn {
+        flex: 1;
+        padding: 10px 8px;
+        font-size: 0.82rem;
+        text-align: center;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      .reveal, .sp, .fill-word {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top GPU Scroll Progress Indicator -->
+  <div class="scroll-bar" id="scrollBar" aria-hidden="true"></div>
+
+  <!-- =====================================================================
+       SECTION 1: STICKY GLASSMORPHIC HEADER + MOBILE DRAWER
+       ===================================================================== -->
+  <header class="top" id="siteHeader">
+    <div class="w tb">
+      <a class="logo" href="#" aria-label="EPUB Translator Home">
+        <span class="mk" aria-hidden="true"></span>
+        EPUB Translator
+      </a>
+
+      <!-- Desktop Navigation with ScrollSpy Active States -->
+      <nav class="nav" aria-label="Primary Navigation">
+        <a href="#features">Features</a>
+        <a href="#formats">Formats</a>
+        <a href="#how">How it works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+
+      <a class="btn gold sm header-cta" href="https://t.me/Mychat9939_bot">Open the bot</a>
+
+      <!-- Mobile Hamburger Trigger -->
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle Menu" aria-expanded="false" aria-controls="mobileDrawer">
+        <span class="hamburger" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile Navigation Drawer -->
+  <nav class="mobile-drawer" id="mobileDrawer" aria-label="Mobile Navigation">
+    <a href="#features">Features</a>
+    <a href="#formats">Supported Formats</a>
+    <a href="#how">How it works</a>
+    <a href="#pricing">Pricing &amp; Plans</a>
+    <a href="#faq">FAQ</a>
+    <a class="btn gold" href="https://t.me/Mychat9939_bot" style="margin-top:6px;">Open Telegram Bot →</a>
+  </nav>
+
+  <!-- =====================================================================
+       SECTION 2: HERO BANNER + LIVE TELEGRAM PREVIEW CARD
+       ===================================================================== -->
+  <section class="hero">
+    <div class="hero-bg" aria-hidden="true"></div>
+    <div class="w hero-grid">
+      <!-- Left Column: Value Proposition & Primary Actions -->
+      <div>
+        <span class="eyebrow dark rise-1">
+          <span class="pulse-dot" aria-hidden="true"></span>
+          Live on Telegram · 20+ Languages
+        </span>
+        <h1 class="rise-2">Translate your books in minutes.</h1>
+        <p class="lead rise-3">
+          Send an EPUB, PDF, DOCX, TXT, or HTML file to our Telegram bot. Get the translated book back in 4–6 minutes, with its layout, images, and chapters left intact.
+        </p>
+        <div class="row rise-4">
+          <a class="btn gold" href="https://t.me/Mychat9939_bot">Start translating free</a>
+          <a class="btn ghost" href="#how">See how it works</a>
+        </div>
+        <p class="note rise-4">
+          ✓ No registration &nbsp;·&nbsp; ✓ 1,000,000 free characters daily &nbsp;·&nbsp; ✓ Auto-delete privacy
+        </p>
+      </div>
+
+      <!-- Right Column: Interactive-feel Live Bot Mockup -->
+      <aside class="bot-preview rise-5" aria-label="Live Telegram Bot Translation Preview">
+        <div class="bot-head">
+          <div class="bot-avatar">ET</div>
+          <div>
+            <div class="bot-title">@Mychat9939_bot</div>
+            <div class="bot-status">● Online · Fast worker cluster</div>
+          </div>
+        </div>
+        <div class="chat-stack">
+          <div class="msg user">
+            <div class="file-pill">
+              <span class="file-badge">EPUB</span>
+              <div>
+                <strong>Shadow_Slave_Vol1.epub</strong>
+                <div class="file-meta">4.2 MB · English → Hindi</div>
+              </div>
+            </div>
+          </div>
+          <div class="msg bot">
+            <div>⚡ <strong>Translating chapters in parallel…</strong></div>
+            <div class="prog-track"><div class="prog-fill"></div></div>
+            <div class="prog-row">
+              <span>Formatting &amp; TOC preserved</span>
+              <span>ETA ~4m 20s</span>
+            </div>
+          </div>
+          <div class="msg bot">
+            <div class="file-pill">
+              <span class="file-badge" style="background:#6BE4B5;">DONE</span>
+              <div>
+                <strong>Shadow_Slave_Vol1_HI.epub</strong>
+                <div class="file-meta">Ready to read · Original file purged 🔒</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 3: KEY METRICS TRUST BAR
+       ===================================================================== -->
+  <div class="stats-strip">
+    <div class="w">
+      <div class="stats-grid reveal">
+        <div class="stat-item">
+          <div class="stat-val">4–6 min</div>
+          <div class="stat-lbl">Average full novel speed</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val">1M / day</div>
+          <div class="stat-lbl">Free daily characters</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val">20+</div>
+          <div class="stat-lbl">Global languages supported</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val">0 stored</div>
+          <div class="stat-lbl">Files purged after delivery</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       SECTION 4: EDITORIAL CALM BANNER 1
+       ===================================================================== -->
+  <section class="block">
+    <div class="deck">
+      <article class="card card-calm reveal">
+        <img src="https://images.unsplash.com/photo-1448375240586-882707db888b?w=1400&q=75&auto=format&fit=crop" alt="Misty forest symbolizing calm reading" loading="lazy" decoding="async">
+        <div class="in">
+          <h2>Take a breath. We’ll handle the rest.</h2>
+          <p>Your book is translated in about 4–6 minutes. Chapters, images, and formatting stay exactly where they belong.</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 5: CORE FEATURES GRID (Spotlight Cards)
+       ===================================================================== -->
+  <section class="block" id="features">
+    <div class="w section-head reveal">
+      <span class="eyebrow">Capabilities</span>
+      <h2>Built for long books.</h2>
+      <p class="sub">Everything a full novel needs, from the first upload to the final download.</p>
+    </div>
+    <div class="deck grid-3">
+      <article class="card spotlight reveal" style="--delay:0">
+        <div class="feat-dot" aria-hidden="true">⚡</div>
+        <h3>Whole novels in 4–6 minutes</h3>
+        <p>Worker servers translate in parallel. You see live progress and an ETA while your book is processed.</p>
+      </article>
+      <article class="card spotlight reveal" style="--delay:1">
+        <div class="feat-dot" aria-hidden="true">✨</div>
+        <h3>Formatting stays put</h3>
+        <p>Bold, italics, links, images, tables of contents, and CSS styles carry over into the translated file.</p>
+      </article>
+      <article class="card spotlight reveal" style="--delay:2">
+        <div class="feat-dot" aria-hidden="true">🌍</div>
+        <h3>20+ languages</h3>
+        <p>Hindi, Spanish, French, German, Japanese, Chinese, Arabic, and more—with your choice of output format.</p>
+      </article>
+      <article class="card spotlight reveal" style="--delay:0">
+        <div class="feat-dot" aria-hidden="true">💬</div>
+        <h3>No website to learn</h3>
+        <p>Send the file straight to the Telegram bot, and the translated book comes back in the exact same chat.</p>
+      </article>
+      <article class="card spotlight reveal" style="--delay:1">
+        <div class="feat-dot" aria-hidden="true">✂️</div>
+        <h3>Split and clean up</h3>
+        <p>Break massive books into neat parts. Remove crawler junk pages so text-to-speech starts cleanly at Chapter 1.</p>
+      </article>
+      <article class="card spotlight reveal" style="--delay:2">
+        <div class="feat-dot" aria-hidden="true">🔒</div>
+        <h3>Files don’t stay</h3>
+        <p>Each file is deleted from our servers as soon as it’s processed. We never store or inspect your content.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 6: EDITORIAL CALM BANNER 2
+       ===================================================================== -->
+  <section class="block">
+    <div class="deck">
+      <article class="card card-calm reveal">
+        <img src="https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?w=1400&q=75&auto=format&fit=crop" alt="Serene waterfall landscape" loading="lazy" decoding="async">
+        <div class="in">
+          <h2>Slow down. Your book is almost ready.</h2>
+          <p>Live progress and an ETA keep you informed while the translation runs. Nothing to refresh, nothing to babysit.</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 7: INTERACTIVE FORMAT BOOKSHELF
+       ===================================================================== -->
+  <section class="block" id="formats">
+    <div class="w section-head reveal">
+      <span class="eyebrow">Universal Compatibility</span>
+      <h2>Every format on one shelf.</h2>
+      <p class="sub">Upload EPUB, PDF, DOCX, TXT, MD, HTML, HTM, or XHTML. Tap any book below to inspect format perks.</p>
+    </div>
+    <div class="deck">
+      <article class="card shelf-card reveal">
+        <div class="shelf" role="tablist" aria-label="Supported E-book Formats">
+          <button type="button" class="sp selected" style="--b:0;background:#3D3BC4;height:236px" data-format="EPUB" data-desc="Full chapter hierarchy, cover art, inline images, CSS styling, and interactive Table of Contents preserved.">EPUB</button>
+          <button type="button" class="sp" style="--b:1;background:#F5B335;color:#17173A;height:208px" data-format="PDF" data-desc="Clean text extraction and reflowable translation—easily convert PDFs into comfortable reading EPUBs.">PDF</button>
+          <button type="button" class="sp" style="--b:2;background:#0F8F86;height:248px" data-format="DOCX" data-desc="Preserves headings, paragraphs, bold/italic emphasis, and lists for drafts and manuscripts.">DOCX</button>
+          <button type="button" class="sp" style="--b:3;background:#C4506F;height:196px" data-format="TXT" data-desc="Lightweight raw web novels cleaned, chapter-split, and ready for instant reading or TTS audio.">TXT</button>
+          <button type="button" class="sp" style="--b:4;background:#6C5CE7;height:218px" data-format="MD" data-desc="Translates Markdown documentation and notes while keeping headings, links, and formatting syntax intact.">MD</button>
+          <button type="button" class="sp" style="--b:5;background:#17173A;color:#F5B335;height:228px" data-format="HTML" data-desc="Supports HTML, HTM, and XHTML web pages while leaving tags, links, and semantic layout untouched.">HTML</button>
+        </div>
+
+        <!-- Live Description Updated by JS on Spine Selection -->
+        <div class="shelf-info" id="shelfInfo" aria-live="polite">
+          <strong>EPUB:</strong> Full chapter hierarchy, cover art, inline images, CSS styling, and interactive Table of Contents preserved.
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 8: FOUR-STEP WORKFLOW
+       ===================================================================== -->
+  <section class="block" id="how">
+    <div class="w section-head reveal">
+      <span class="eyebrow">Simple Workflow</span>
+      <h2>From upload to download in four steps.</h2>
+    </div>
+    <div class="deck grid-4">
+      <article class="card spotlight reveal" style="--delay:0">
+        <span class="n">1</span>
+        <h3>Open the bot</h3>
+        <p>Open @Mychat9939_bot in Telegram and tap Start. No signup or password needed.</p>
+      </article>
+      <article class="card spotlight reveal" style="--delay:1">
+        <span class="n">2</span>
+        <h3>Send your book</h3>
+        <p>Upload any EPUB, PDF, DOCX, TXT, or HTML file directly into the chat.</p>
+      </article>
+      <article class="card spotlight reveal" style="--delay:2">
+        <span class="n">3</span>
+        <h3>Pick a language</h3>
+        <p>Choose your target language, desired output format, and optional split/clean tools.</p>
+      </article>
+      <article class="card spotlight reveal" style="--delay:3">
+        <span class="n">4</span>
+        <h3>Get the result</h3>
+        <p>Download your translated book right inside Telegram, about 4–6 minutes later.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 9: PRICING & PLANS (Synced with 200 Files / Month Fair Usage)
+       ===================================================================== -->
+  <section class="block" id="pricing">
+    <div class="w pricing-top reveal">
+      <div>
+        <span class="eyebrow">Transparent Pricing</span>
+        <h2>Plans for every reader.</h2>
+        <p class="sub">Start free with 1,000,000 characters a day. Upgrade for bigger files, priority speed, and up to 200 books/month.</p>
+      </div>
+
+      <!-- Interactive Premium Plan Switcher (Monthly / 3 Months / Telegram Stars) -->
+      <div class="billing-switch" role="group" aria-label="Switch Premium Billing Option">
+        <button type="button" class="bill-btn active" data-plan="monthly">Monthly</button>
+        <button type="button" class="bill-btn" data-plan="quarterly">3 Months <span class="save-tag">Save ₹75</span></button>
+        <button type="button" class="bill-btn" data-plan="stars">Global ⭐ Stars</button>
+      </div>
+    </div>
+
+    <div class="deck">
+      <div class="grid-3">
+        <!-- Plan 1: Free -->
+        <article class="card spotlight plan reveal" style="--delay:0">
+          <div>
+            <div class="tier-row"><span class="tier">Free</span></div>
+            <div class="price">₹0</div>
+            <p class="per">Forever free · No card needed</p>
+            <ul>
+              <li>1,000,000 characters every day</li>
+              <li>Each file up to 2 MB</li>
+              <li>All 20+ languages</li>
+              <li>Format conversion included</li>
+              <li>Standard processing queue</li>
+            </ul>
+          </div>
+          <a class="btn ink" href="https://t.me/Mychat9939_bot">Start free</a>
+        </article>
+
+        <!-- Plan 2: Dynamic Premium Card (Updates via Billing Switcher) -->
+        <article class="card plan hot reveal" style="--delay:1">
+          <div>
+            <div class="tier-row">
+              <span class="tier" id="premTitle">Premium</span>
+              <span class="badge" id="premBadge">Most Popular</span>
+            </div>
+            <div class="price" id="premPrice">₹150</div>
+            <p class="per" id="premPer">30 days · UPI, cards &amp; net banking</p>
+            <ul>
+              <li>No daily limits (up to 200 files / month)</li>
+              <li>Large files up to 10 MB each</li>
+              <li>Priority queue — skip the line</li>
+              <li>All 20+ languages &amp; format conversion</li>
+              <li>Smart chapter splitting &amp; novel clean-up</li>
+              <li>Priority support</li>
+            </ul>
+          </div>
+          <a class="btn gold" href="https://t.me/Mychat9939_bot" id="premCta">Get Premium</a>
+        </article>
+
+        <!-- Plan 3: Pay-Per-Use Credit Packs -->
+        <article class="card spotlight plan reveal" style="--delay:2">
+          <div>
+            <div class="tier-row"><span class="tier">Credit Packs</span></div>
+            <div class="price">₹15</div>
+            <p class="per">Starter Pack (5 books) · Never expires</p>
+            <ul>
+              <li>Bulk Pack: ₹60 for 25 books (Save 20%)</li>
+              <li>Each file up to 5 MB</li>
+              <li>Credits used only after daily free quota</li>
+              <li>All 20+ languages supported</li>
+              <li>Pay once, use whenever you like</li>
+            </ul>
+          </div>
+          <a class="btn ink" href="https://t.me/Mychat9939_bot">Buy credits</a>
+        </article>
+      </div>
+
+      <!-- Secondary Plan Row (Basic & Fair Usage Note) -->
+      <div class="extra-plans">
+        <article class="card spotlight reveal" style="--delay:0">
+          <h3>Basic Plan — ₹75 / 30 days</h3>
+          <p>Ideal for regular readers: translate up to 5 books every day (max 200 files/month), with files up to 5 MB each.</p>
+        </article>
+        <article class="card spotlight reveal" style="--delay:1">
+          <h3>Fair Usage Policy · 200 files / month</h3>
+          <p>Roughly 6–7 books every single day. Keeps server speeds blazing fast and plan prices affordable without price hikes.</p>
+        </article>
+      </div>
+    </div>
+
+    <p class="pay reveal">
+      Pay instantly with Razorpay (UPI, cards, net banking) or Telegram ⭐ Stars from any country. Open the bot, tap <strong>Premium</strong>, and choose your plan.
+    </p>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 10: WORD-BY-WORD SCROLL REVEAL STATEMENT & MARQUEE
+       ===================================================================== -->
+  <section class="stmt">
+    <div class="w">
+      <p class="fill-words" id="fillText">
+        <span class="fill-word">Same</span>
+        <span class="fill-word">book.</span>
+        <span class="fill-word">Same</span>
+        <span class="fill-word">layout.</span>
+        <span class="fill-word accent">A</span>
+        <span class="fill-word accent">new</span>
+        <span class="fill-word accent">language,</span>
+        <span class="fill-word">page</span>
+        <span class="fill-word">by</span>
+        <span class="fill-word">page.</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- Infinite Hardware-Accelerated Language Marquee -->
+  <div class="lang-row" aria-hidden="true">
+    <p class="lang-track">
+      <span>Hindi</span><span>Spanish</span><span>日本語</span><span>Français</span><span>Deutsch</span><span>Italiano</span><span>Português</span><span>Русский</span><span>한국어</span><span>中文</span><span>العربية</span>
+      <span>Hindi</span><span>Spanish</span><span>日本語</span><span>Français</span><span>Deutsch</span><span>Italiano</span><span>Português</span><span>Русский</span><span>한국어</span><span>中文</span><span>العربية</span>
+    </p>
+  </div>
+
+  <!-- =====================================================================
+       SECTION 11: SMOOTH ACCORDION FAQ
+       ===================================================================== -->
+  <section class="block" id="faq" style="padding-bottom:112px">
+    <div class="w faq reveal">
+      <span class="eyebrow">Help Center</span>
+      <h2 style="margin-bottom:32px;">Questions, answered.</h2>
+
+      <details open>
+        <summary>Which file formats work?</summary>
+        <div class="faq-body"><p>EPUB, PDF, DOCX, TXT, MD, HTML, HTM, and XHTML. You can also convert between them while translating.</p></div>
+      </details>
+
+      <details>
+        <summary>How fast is translation?</summary>
+        <div class="faq-body"><p>A typical full-length novel takes about 4–6 minutes. Shorter files finish even quicker, and Premium users jump straight to the priority queue.</p></div>
+      </details>
+
+      <details>
+        <summary>Is formatting preserved?</summary>
+        <div class="faq-body"><p>Yes. Bold, italics, headings, links, cover images, tables of contents, CSS styles, and chapter structure carry over cleanly.</p></div>
+      </details>
+
+      <details>
+        <summary>Why is there a 200 files / month limit on subscriptions?</summary>
+        <div class="faq-body"><p>200 files a month equals 6–7 full books every single day. This fair usage policy prevents server abuse so every genuine reader enjoys fast, uninterrupted translations without higher subscription costs.</p></div>
+      </details>
+
+      <details>
+        <summary>How does the free plan work?</summary>
+        <div class="faq-body"><p>You get 1,000,000 characters every day with files up to 2 MB each—enough for multiple books a day, free forever.</p></div>
+      </details>
+
+      <details>
+        <summary>What happens to my uploaded files?</summary>
+        <div class="faq-body"><p>Files are processed in memory/temporary storage and deleted immediately after delivery. We never store your books.</p></div>
+      </details>
+
+      <details>
+        <summary>Do subscriptions auto-renew?</summary>
+        <div class="faq-body"><p>No. Subscriptions never auto-renew, so you stay in full control. Credit packs never expire and are only used after your daily free quota runs out.</p></div>
+      </details>
+
+      <details>
+        <summary>Do you offer refunds?</summary>
+        <div class="faq-body"><p>Yes. If you’re not satisfied within 7 days, reach out for a full refund. Failed translations never consume your credits or quota.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 12: FINAL CALL-TO-ACTION BANNER
+       ===================================================================== -->
+  <section class="cta">
+    <div class="w reveal">
+      <span class="eyebrow dark">Ready in Seconds</span>
+      <h2>Send us your next book.</h2>
+      <p>Open the Telegram bot, drop your file, and pick a language. The free plan covers 1,000,000 characters every day.</p>
+      <a class="btn gold" href="https://t.me/Mychat9939_bot">Start translating free →</a>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 13: FOOTER
+       ===================================================================== -->
+  <footer>
+    <div class="w">
+      <div class="fg">
+        <div>
+          <p class="fb">EPUB Translator</p>
+          <p>The fastest way to translate full books in Telegram while keeping layout, chapters, and formatting intact.</p>
+        </div>
+        <div>
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#formats">Formats</a></li>
+            <li><a href="#how">How it works</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Support</h4>
+          <ul>
+            <li><a href="https://t.me/Mychat9939_bot">Telegram bot</a></li>
+            <li><a href="mailto:support@epubtranslator.com">support@epubtranslator.com</a></li>
+            <li><a href="https://github.com/Nitesh99390">GitHub</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="#">Privacy policy</a></li>
+            <li><a href="#">Terms of service</a></li>
+            <li><a href="#">Refund policy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="legal">
+        <span>&copy; 2026 EPUB Translator. All rights reserved.</span>
+        <span>Built for fast, clutter-free reading.</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Floating Back-to-Top Action -->
+  <button type="button" class="to-top" id="toTopBtn" aria-label="Back to top">↑</button>
+
+  <!-- =====================================================================
+       CLIENT-SIDE INTERACTION & ANIMATION ENGINE (Zero External Dependencies)
+       ===================================================================== -->
+  <script>
+    (() => {
+      'use strict';
+
+      /* -------------------------------------------------------------------
+         MODULE 1: 60FPS SCROLL-REVEAL ENGINE (IntersectionObserver)
+         Triggers once per element and unobserves to free browser memory.
+         ------------------------------------------------------------------- */
+      const revealEls = document.querySelectorAll('.reveal');
+      const revealObserver = new IntersectionObserver((entries, obs) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+            obs.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -36px 0px' });
+
+      revealEls.forEach((el) => revealObserver.observe(el));
+
+      /* -------------------------------------------------------------------
+         MODULE 2: UNIFIED REQUESTANIMATIONFRAME SCROLL HANDLER
+         Handles: (a) Top progress bar, (b) Sticky header glass state,
+         (c) Back-to-top visibility, and (d) Word-by-word text illumination.
+         ------------------------------------------------------------------- */
+      const scrollBar = document.getElementById('scrollBar');
+      const siteHeader = document.getElementById('siteHeader');
+      const toTopBtn = document.getElementById('toTopBtn');
+      const fillContainer = document.getElementById('fillText');
+      const fillWords = fillContainer ? Array.from(fillContainer.querySelectorAll('.fill-word')) : [];
+      let ticking = false;
+
+      function updateOnScroll() {
+        const y = window.scrollY;
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+
+        // (a) Update GPU scaleX scroll bar
+        if (scrollBar && maxScroll > 0) {
+          const ratio = Math.min(1, Math.max(0, y / maxScroll));
+          scrollBar.style.transform = `scaleX(${ratio})`;
+        }
+
+        // (b) Toggle scrolled header elevation
+        if (siteHeader) {
+          siteHeader.classList.toggle('scrolled', y > 36);
+        }
+
+        // (c) Reveal floating back-to-top button after scrolling 600px
+        if (toTopBtn) {
+          toTopBtn.classList.toggle('show', y > 600);
+        }
+
+        // (d) Progressive word-by-word reveal when statement enters viewport
+        if (fillContainer && fillWords.length) {
+          const rect = fillContainer.getBoundingClientRect();
+          const winH = window.innerHeight;
+          const progress = Math.min(1, Math.max(0, (winH * 0.82 - rect.top) / (winH * 0.52)));
+          const activeCount = Math.floor(progress * (fillWords.length + 1));
+
+          fillWords.forEach((word, index) => {
+            word.classList.toggle('lit', index < activeCount);
+          });
+        }
+
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(updateOnScroll);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      updateOnScroll();
+
+      // Smooth scroll back to top
+      if (toTopBtn) {
+        toTopBtn.addEventListener('click', () => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      }
+
+      /* -------------------------------------------------------------------
+         MODULE 3: ACTIVE NAVIGATION SCROLLSPY
+         Highlights the current section link in the sticky desktop header.
+         ------------------------------------------------------------------- */
+      const navLinks = Array.from(document.querySelectorAll('.nav a[href^="#"]'));
+      const trackedSections = navLinks
+        .map((link) => document.querySelector(link.getAttribute('href')))
+        .filter(Boolean);
+
+      const spyObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = `#${entry.target.id}`;
+            navLinks.forEach((link) => {
+              link.classList.toggle('active', link.getAttribute('href') === id);
+            });
+          }
+        });
+      }, { rootMargin: '-35% 0px -55% 0px' });
+
+      trackedSections.forEach((sec) => spyObserver.observe(sec));
+
+      /* -------------------------------------------------------------------
+         MODULE 4: MOBILE DRAWER MENU TOGGLE
+         Handles open/close state, Escape key dismissal, and auto-close on click.
+         ------------------------------------------------------------------- */
+      const menuToggle = document.getElementById('menuToggle');
+      const mobileDrawer = document.getElementById('mobileDrawer');
+
+      function setMenuState(isOpen) {
+        if (!menuToggle || !mobileDrawer) return;
+        menuToggle.setAttribute('aria-expanded', String(isOpen));
+        mobileDrawer.classList.toggle('open', isOpen);
+      }
+
+      if (menuToggle && mobileDrawer) {
+        menuToggle.addEventListener('click', () => {
+          const isOpen = menuToggle.getAttribute('aria-expanded') === 'true';
+          setMenuState(!isOpen);
+        });
+
+        mobileDrawer.querySelectorAll('a').forEach((link) => {
+          link.addEventListener('click', () => setMenuState(false));
+        });
+
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') setMenuState(false);
+        });
+      }
+
+      /* -------------------------------------------------------------------
+         MODULE 5: CURSOR-TRACKING SPOTLIGHT GLOW FOR CARDS (Desktop Only)
+         Updates local CSS variables (--mx, --my) for smooth radial light.
+         ------------------------------------------------------------------- */
+      if (window.matchMedia('(hover: hover)').matches) {
+        document.querySelectorAll('.card.spotlight').forEach((card) => {
+          card.addEventListener('pointermove', (e) => {
+            const rect = card.getBoundingClientRect();
+            card.style.setProperty('--mx', `${e.clientX - rect.left}px`);
+            card.style.setProperty('--my', `${e.clientY - rect.top}px`);
+          });
+        });
+      }
+
+      /* -------------------------------------------------------------------
+         MODULE 6: INTERACTIVE BOOKSHELF FORMAT INSPECTOR
+         Lets users tap any book spine to see format-specific advantages.
+         ------------------------------------------------------------------- */
+      const spines = document.querySelectorAll('.shelf .sp');
+      const shelfInfo = document.getElementById('shelfInfo');
+
+      spines.forEach((spine) => {
+        spine.addEventListener('click', () => {
+          spines.forEach((s) => s.classList.remove('selected'));
+          spine.classList.add('selected');
+
+          if (shelfInfo) {
+            const fmt = spine.dataset.format;
+            const desc = spine.dataset.desc;
+            shelfInfo.innerHTML = `<strong>${fmt}:</strong> ${desc}`;
+          }
+        });
+      });
+
+      /* -------------------------------------------------------------------
+         MODULE 7: DYNAMIC PRICING BILLING SWITCHER
+         Smoothly swaps Premium card between Monthly, 3 Months, and Stars.
+         ------------------------------------------------------------------- */
+      const billingConfig = {
+        monthly: {
+          title: 'Premium',
+          badge: 'Most Popular',
+          price: '₹150',
+          per: '30 days · UPI, cards & net banking',
+          cta: 'Get Premium'
+        },
+        quarterly: {
+          title: 'Premium · 3 Months',
+          badge: 'Best Value',
+          price: '₹375',
+          per: '90 days · Save ₹75 vs monthly',
+          cta: 'Get 3 Months Plan'
+        },
+        stars: {
+          title: 'Premium · Stars',
+          badge: 'Any Country',
+          price: '100 ⭐',
+          per: '30 days · Pay with Telegram Stars (no card/UPI)',
+          cta: 'Pay with Stars'
+        }
+      };
+
+      const billButtons = document.querySelectorAll('.bill-btn');
+      const premTitle = document.getElementById('premTitle');
+      const premBadge = document.getElementById('premBadge');
+      const premPrice = document.getElementById('premPrice');
+      const premPer = document.getElementById('premPer');
+      const premCta = document.getElementById('premCta');
+
+      billButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const mode = btn.dataset.plan;
+          const data = billingConfig[mode];
+          if (!data) return;
+
+          billButtons.forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+
+          // Micro transition while swapping numbers
+          premPrice.classList.add('updating');
+          setTimeout(() => {
+            premTitle.textContent = data.title;
+            premBadge.textContent = data.badge;
+            premPrice.textContent = data.price;
+            premPer.textContent = data.per;
+            premCta.textContent = data.cta;
+            premPrice.classList.remove('updating');
+          }, 130);
+        });
+      });
+
+      /* -------------------------------------------------------------------
+         MODULE 8: SMOOTH FAQ ACCORDION (Web Animations API)
+         Animates native <details> height cleanly on both expand & collapse.
+         ------------------------------------------------------------------- */
+      document.querySelectorAll('.faq details').forEach((detail) => {
+        const summary = detail.querySelector('summary');
+        const body = detail.querySelector('.faq-body');
+        let currentAnim = null;
+
+        summary.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (currentAnim) currentAnim.cancel();
+
+          const startHeight = `${detail.offsetHeight}px`;
+
+          if (detail.open) {
+            const endHeight = `${summary.offsetHeight}px`;
+            currentAnim = detail.animate(
+              { height: [startHeight, endHeight] },
+              { duration: 280, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
+            );
+            currentAnim.onfinish = () => {
+              detail.open = false;
+              detail.style.height = '';
+            };
+          } else {
+            detail.open = true;
+            const endHeight = `${summary.offsetHeight + body.offsetHeight}px`;
+            currentAnim = detail.animate(
+              { height: [startHeight, endHeight] },
+              { duration: 320, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
+            );
+            currentAnim.onfinish = () => {
+              detail.style.height = '';
+            };
+          }
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
